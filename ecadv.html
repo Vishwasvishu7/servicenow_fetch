@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ECAD Library Dashboard & Incident Viewer</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    
+    <script src="https://unpkg.com/feather-icons"></script>
+
+    <style>
+        /* Base & Typography */
+        :root {
+            --primary-color: #4A00E0; /* Deep Purple */
+            --secondary-color: #8E2DE2; /* Lighter Purple */
+            --success-color: #28A745;
+            --error-color: #FF4D4F;
+            --background-light: #F4F7F6;
+            --text-dark: #222;
+            --text-medium: #555;
+            --text-light: #fff;
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            line-height: 1.6;
+            color: var(--text-dark);
+            background-color: var(--background-light);
+            scroll-behavior: smooth;
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+        h1, h2, h3 { line-height: 1.2; color: var(--text-dark); }
+        a { text-decoration: none; color: inherit; }
+
+        /* Navigation */
+        .navbar { background-color: var(--text-light); padding: 15px 0; box-shadow: 0 2px 5px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 1000; }
+        .navbar .container { display: flex; justify-content: space-between; align-items: center; }
+        .navbar .logo { font-weight: 800; font-size: 24px; color: var(--primary-color); }
+        .navbar nav ul { list-style: none; margin: 0; padding: 0; display: flex; }
+        .navbar nav ul li { margin-left: 30px; }
+        .navbar nav ul li a { font-weight: 600; color: var(--text-medium); transition: color 0.3s ease; }
+        .navbar nav ul li a:hover { color: var(--primary-color); }
+
+        /* Hero Section */
+        .hero-section {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: var(--text-light);
+            text-align: center;
+            padding: 180px 0;
+            min-height: 70vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            transition: opacity 0.5s ease;
+        }
+        .hero-section h1 { font-size: 80px; font-weight: 800; margin-bottom: 5px; color: var(--text-light); letter-spacing: 4px; }
+        .hero-section h2 { font-size: 40px; font-weight: 400; margin-top: 0; color: var(--text-light); opacity: 0.9; }
+        .hero-section .subtitle, .hero-section .date { font-size: 18px; margin-top: 20px; opacity: 0.8; }
+        
+        .btn-primary {
+            background-color: rgba(255, 255, 255, 0.2);
+            border: 2px solid var(--text-light);
+            color: var(--text-light);
+            padding: 15px 35px;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: 600;
+            margin-top: 50px;
+            display: inline-flex;
+            align-items: center;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+            cursor: pointer;
+        }
+        .btn-primary:hover { background-color: rgba(255, 255, 255, 0.3); transform: translateY(-3px); }
+        .btn-primary .arrow { margin-left: 15px; font-size: 20px; transition: margin-left 0.3s ease; }
+        .btn-primary:hover .arrow { margin-left: 20px; }
+
+        /* General Section Styling */
+        section { padding: 80px 0; transition: opacity 0.5s ease; }
+        .challenges-section { background-color: #FCFCFC; text-align: center; }
+        .solution-section { background-color: #EEF3F7; text-align: center; }
+        .impact-section { background-color: #FCFCFC; text-align: center; }
+        .transformation-section { background-color: #EEF3F7; text-align: center; }
+        .section-title { font-size: 36px; margin-bottom: 20px; }
+        .section-description { font-size: 18px; color: var(--text-medium); margin-bottom: 60px; max-width: 800px; margin-left: auto; margin-right: auto; }
+
+        /* Incident Viewer Section (New Section) */
+        .incident-viewer-section {
+            background-color: var(--text-light);
+            padding: 80px 0;
+            min-height: 80vh;
+        }
+        .incident-viewer-section h2 { margin-bottom: 10px; color: var(--primary-color); }
+        .incident-viewer-section p { color: var(--text-medium); margin-bottom: 40px; }
+        #incident-data-container { margin-top: 20px; }
+        .data-table { 
+            width: 100%; border-collapse: separate; border-spacing: 0; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-radius: 8px; overflow: hidden;
+        }
+        .data-table th, .data-table td { padding: 15px 12px; text-align: left; font-size: 0.9em; }
+        .data-table th { background-color: var(--primary-color); color: var(--text-light); text-transform: uppercase; font-weight: 600; }
+        .data-table tr:nth-child(even) { background-color: #f9f9f9; }
+        .data-table tr:hover { background-color: #E6E6FA; transform: scale(1.005); transition: background-color 0.2s, transform 0.2s; }
+        .error { color: var(--error-color); font-weight: bold; padding: 20px; background-color: #FFF0F0; border-radius: 8px; border: 1px solid var(--error-color); }
+        .loading { text-align: center; font-size: 1.2em; color: var(--primary-color); padding: 50px; }
+
+        /* Presentation CSS (All merged for a single file) */
+        .challenges-grid { display: grid; grid-template-columns: 1fr 0.8fr; gap: 60px; text-align: left; align-items: start; }
+        .challenge-points { display: flex; flex-direction: column; gap: 30px; }
+        .challenge-item { display: flex; align-items: flex-start; }
+        .challenge-item .icon-error { font-size: 30px; color: var(--error-color); margin-right: 15px; font-weight: bold; line-height: 1; }
+        .challenge-item h3 { font-size: 22px; margin-top: 0; margin-bottom: 5px; }
+        .challenge-item p { font-size: 16px; color: #666; }
+        .manual-process-card { background-color: #FFF0F0; border-radius: 12px; padding: 40px; box-shadow: 0 8px 25px rgba(0,0,0,0.08); border: 1px solid #FFE0E0; }
+        .manual-process-card .card-icon { font-size: 48px; color: var(--error-color); margin-bottom: 25px; line-height: 1; }
+        .manual-process-card .card-icon svg { stroke: var(--error-color); }
+        .manual-process-card ul { list-style: none; padding: 0; margin: 0; }
+        .manual-process-card ul li { font-size: 16px; color: #555; margin-bottom: 12px; position: relative; padding-left: 25px; }
+        .manual-process-card ul li::before { content: '•'; color: var(--error-color); font-size: 20px; position: absolute; left: 0; top: -2px; }
+
+        .solution-cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
+        .solution-card { background-color: var(--text-light); border-radius: 12px; padding: 40px; box-shadow: 0 8px 25px rgba(0,0,0,0.08); text-align: left; border: 1px solid #E0E7ED; transition: transform 0.3s ease, box-shadow 0.3s ease; }
+        .solution-card:hover { transform: translateY(-5px); box-shadow: 0 12px 30px rgba(0,0,0,0.12); }
+        .solution-card .card-icon { font-size: 48px; color: var(--success-color); margin-bottom: 25px; line-height: 1; }
+        .solution-card .card-icon svg { stroke: var(--success-color); }
+        .solution-card h3 { font-size: 24px; margin-top: 0; margin-bottom: 15px; }
+        .solution-card p { font-size: 16px; color: #666; }
+
+        .impact-content-grid { display: grid; grid-template-columns: 1fr 0.8fr; gap: 60px; text-align: left; align-items: start; }
+        .impact-points { display: flex; flex-direction: column; gap: 30px; }
+        .impact-item { display: flex; align-items: flex-start; }
+        .impact-item .icon-success { font-size: 30px; color: var(--success-color); margin-right: 15px; font-weight: bold; line-height: 1; }
+        .impact-item h3 { font-size: 22px; margin-top: 0; margin-bottom: 5px; }
+        .impact-item p { font-size: 16px; color: #666; }
+        .expected-improvements-card { background-color: #E8F9ED; border-radius: 12px; padding: 40px; box-shadow: 0 8px 25px rgba(0,0,0,0.08); border: 1px solid #D0F0D8; }
+        .improvements-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; text-align: center; margin-top: 30px; }
+        .improvement-metric .percentage { font-size: 48px; font-weight: 700; color: var(--success-color); display: block; margin-bottom: 5px; }
+        .improvement-metric p { font-size: 16px; color: #555; }
+        
+        .transformation-cards-wrapper { display: flex; justify-content: center; align-items: center; gap: 40px; flex-wrap: wrap; }
+        .transformation-card { background-color: var(--text-light); border-radius: 12px; padding: 30px 40px; box-shadow: 0 8px 25px rgba(0,0,0,0.08); text-align: left; flex: 1; min-width: 300px; max-width: 450px; }
+        .as-is-state { border: 1px solid #FFCCCC; }
+        .as-is-state h3 { color: var(--error-color); }
+        .as-is-state ul li::before { content: '\2716'; color: var(--error-color); }
+        .to-be-state { border: 1px solid #CCE8D0; }
+        .to-be-state h3 { color: var(--success-color); }
+        .to-be-state ul li::before { content: '\2714'; color: var(--success-color); }
+        .transformation-card h3 { font-size: 24px; margin-top: 0; margin-bottom: 25px; text-align: center; }
+        .transformation-card ul { list-style: none; padding: 0; margin: 0; }
+        .transformation-card ul li { font-size: 16px; color: #555; margin-bottom: 12px; position: relative; padding-left: 30px; line-height: 1.4; }
+        .transformation-card ul li::before { font-size: 18px; position: absolute; left: 0; top: 0; font-weight: bold; }
+        .transformation-arrow { font-size: 60px; color: var(--primary-color); margin: 0 20px; line-height: 1; font-weight: 300; }
+        
+        .thank-you-section { background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%); color: var(--text-light); text-align: center; padding: 100px 0; }
+        .thank-you-section h2 { font-size: 48px; font-weight: 700; margin-bottom: 20px; color: var(--text-light); letter-spacing: 1px; }
+        .btn-secondary { background-color: rgba(255, 255, 255, 0.2); border: 2px solid var(--text-light); color: var(--text-light); padding: 12px 25px; border-radius: 50px; font-size: 16px; font-weight: 600; display: inline-flex; align-items: center; transition: background-color 0.3s ease, transform 0.3s ease; }
+        .btn-secondary:hover { background-color: rgba(255, 255, 255, 0.3); transform: translateY(-2px); }
+
+        footer { background-color: #222; color: #bbb; text-align: center; padding: 20px 0; font-size: 14px; }
+
+        /* Media Queries for Responsiveness */
+        @media (max-width: 900px) {
+            .challenges-grid, .impact-content-grid { grid-template-columns: 1fr; }
+            .transformation-cards-wrapper { flex-direction: column; gap: 30px; }
+            .transformation-arrow { transform: rotate(90deg); font-size: 40px; margin: 20px 0; }
+            .hero-section h1 { font-size: 60px; }
+        }
+
+        /* Utility Class for JS routing */
+        .hidden-section { display: none !important; }
+
+    </style>
+</head>
+<body>
+    <main id="presentation-dashboard">
+        <header class="navbar">
+            <div class="container">
+                <div class="logo">ECAD Dashboard</div>
+                <nav>
+                    <ul>
+                        <li><a href="#" onclick="showSection('home')">Home</a></li>
+                        <li><a href="#" onclick="showSection('problem')">Problem</a></li>
+                        <li><a href="#" onclick="showSection('solution')">Solution</a></li>
+                        <li><a href="#" onclick="showSection('impact')">Impact</a></li>
+                        <li><a href="#" onclick="showSection('comparison')">Comparison</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </header>
+
+        <section id="home" class="hero-section">
+            <div class="container">
+                <h1>ECAD LIBRARY</h1>
+                <h2>DASHBOARD</h2>
+                <p class="subtitle">By Team Odd One Out</p>
+                <p class="date">September 2025</p>
+                <button id="explore-btn" class="btn btn-primary">
+                    Explore Dashboard <span class="arrow">&rarr;</span>
+                </button>
+            </div>
+        </section>
+        
+        <section id="problem" class="challenges-section">
+            <div class="container">
+                <h2>Current Challenges</h2>
+                <div class="challenges-grid">
+                    <div class="challenge-points">
+                        <div class="challenge-item">
+                            <span class="icon icon-error">&times;</span>
+                            <h3>No Centralized Dashboard</h3>
+                            <p>Currently, there is no dashboard available to track component requests in WISE or ServiceNow.</p>
+                        </div>
+                        <div class="challenge-item">
+                            <span class="icon icon-error">&times;</span>
+                            <h3>Manual Excel Tracking</h3>
+                            <p>ECAD Library metrics are maintained manually in Excel sheets, updated weekly by dedicated resources.</p>
+                        </div>
+                        <div class="challenge-item">
+                            <span class="icon icon-error">&times;</span>
+                            <h3>Limited Visibility</h3>
+                            <p>Management lacks real-time visibility into ECAD Library operations and performance metrics.</p>
+                        </div>
+                    </div>
+                    <div class="manual-process-card">
+                        <div class="card-icon"><i data-feather="bar-chart-2"></i></div>
+                        <h3>Manual Process Issues</h3>
+                        <ul>
+                            <li>Time-consuming weekly updates</li>
+                            <li>Error-prone manual data entry</li>
+                            <li>Delayed metric reporting</li>
+                            <li>Limited analytical capabilities</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="solution" class="solution-section">
+            <div class="container">
+                <h2 class="section-title">Our Solution</h2>
+                <p class="section-description">A centralized, interactive dashboard serving as a single source for ECAD Library operations</p>
+                <div class="solution-cards-grid">
+                    <div class="solution-card">
+                        <div class="card-icon"><i data-feather="activity"></i></div>
+                        <h3>Real-time Visibility</h3>
+                        <p>Live monitoring of component request volumes and delivery metrics</p>
+                    </div>
+                    <div class="solution-card">
+                        <div class="card-icon"><i data-feather="trending-up"></i></div>
+                        <h3>Automated Reporting</h3>
+                        <p>Eliminates manual Excel maintenance with automated data collection</p>
+                    </div>
+                    <div class="solution-card">
+                        <div class="card-icon"><i data-feather="check-circle"></i></div>
+                        <h3>Centralized Operations</h3>
+                        <p>Single source of truth for all ECAD Library operations and metrics</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <section id="impact" class="impact-section">
+            <div class="container">
+                <h2 class="section-title">Business Impact</h2>
+                <p class="section-description">Transforming ECAD Library operations with measurable improvements</p>
+                <div class="impact-content-grid">
+                    <div class="impact-points">
+                        <div class="impact-item">
+                            <span class="icon icon-success">&#10003;</span>
+                            <h3>Management Visibility</h3>
+                            <p>Live visibility into ECAD Library metrics enables real-time monitoring of component requests and delivery performance.</p>
+                        </div>
+                        <div class="impact-item">
+                            <span class="icon icon-success">&#10003;</span>
+                            <h3>Eliminated Manual Effort</h3>
+                            <p>Automated data collection and reporting eliminates manual Excel maintenance, improving efficiency and accuracy.</p>
+                        </div>
+                        <div class="impact-item">
+                            <span class="icon icon-success">&#10003;</span>
+                            <h3>Improved Decision Making</h3>
+                            <p>Data-driven insights enable better strategic decisions and resource allocation.</p>
+                        </div>
+                    </div>
+                    <div class="expected-improvements-card">
+                        <h3>Expected Improvements</h3>
+                        <div class="improvements-grid">
+                            <div class="improvement-metric">
+                                <span class="percentage">85%</span>
+                                <p>Efficiency Increase</p>
+                            </div>
+                            <div class="improvement-metric">
+                                <span class="percentage">50%</span>
+                                <p>Time Reduction</p>
+                            </div>
+                            <div class="improvement-metric">
+                                <span class="percentage">95%</span>
+                                <p>Data Accuracy</p>
+                            </div>
+                            <div class="improvement-metric">
+                                <span class="percentage">24/7</span>
+                                <p>Real-time Updates</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="comparison" class="transformation-section">
+            <div class="container">
+                <h2 class="section-title">Transformation Overview</h2>
+                <p class="section-description">From manual processes to automated excellence</p>
+
+                <div class="transformation-cards-wrapper">
+                    <div class="transformation-card as-is-state">
+                        <h3>AS-IS State</h3>
+                        <ul>
+                            <li>Manual Excel sheet maintenance</li>
+                            <li>Weekly manual updates by resources</li>
+                            <li>No real-time visibility</li>
+                            <li>Limited reporting capabilities</li>
+                            <li>Error-prone data entry</li>
+                            <li>Delayed metric availability</li>
+                        </ul>
+                    </div>
+                    <div class="transformation-arrow">
+                        <span class="arrow-icon">&rarr;</span>
+                    </div>
+                    <div class="transformation-card to-be-state">
+                        <h3>TO-BE State</h3>
+                        <ul>
+                            <li>Automated dashboard with real-time data</li>
+                            <li>Continuous automated updates</li>
+                            <li>Live visibility for management</li>
+                            <li>Advanced analytics and reporting</li>
+                            <li>Accurate automated data collection</li>
+                            <li>Instant metric availability</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="thank-you-section">
+            <div class="container">
+                <h2>THANK YOU</h2>
+                <p>Ready to transform ECAD Library operations</p>
+                <p class="team-info">Team Odd One Out | September 2025</p>
+                <a href="#" onclick="showSection('home')" class="btn btn-secondary">Back To Top <span class="arrow">&uarr;</span></a>
+            </div>
+        </section>
+
+        <footer>
+            <div class="container">
+                <p>&copy; 2025 ECAD Dashboard. All rights reserved.</p>
+            </div>
+        </footer>
+    </main>
+
+    <main id="incident-viewer" class="incident-viewer-section hidden-section">
+        <div class="container">
+            <a href="#" onclick="showPresentation()" style="display: block; margin-bottom: 20px; color: var(--primary-color); font-weight: 600;">
+                &larr; Back to Presentation
+            </a>
+            <h2>ServiceNow Incident History</h2>
+            <p>Displaying resolved incidents from the last 12 months for the filtered Assignment Group and Business Service.</p>
+            
+            <div id="incident-data-container">
+                <p class="loading">Fetching data from ServiceNow...</p>
+            </div>
+        </div>
+    </main>
+    
+    <script>
+        feather.replace(); // Initialize feather icons
+
+        // --- Configuration ---
+        // 🚨 IMPORTANT: Replace 'YOUR_SECURE_BEARER_TOKEN_HERE' with a real, valid 
+        // OAuth 2.0 Bearer Token provided by your ServiceNow administrator.
+        const SECURE_TOKEN = 'YOUR_SECURE_BEARER_TOKEN_HERE'; 
+
+        // The exact, complex API URL provided by the user
+        const URL = "https://vitescoprod.service-now.com/api/now/table/incident?sysparm_query=assignment_group%3Db4b1d2461bbcd95067dc86ef7b4bcb7e%5Ebusiness_service%3D68d64de81bc8b4509a26657faa4bcb74%5Eclosed_atONLast%2012%20months%40javascript%3Ags.beginningOfLast12Months()%40javascript%3Ags.endOfLast12Months()&sysparm_display_value=all&sysparm_fields=closed_by%2Cresolved_by%2Csys_updated_by%2Chold_reason%2Cu_inc_task_responded%2Cu_on_hold_duration%2Cclosed_at%2Cincident_state%2Copened_at%2Cnumber";
+
+        // --- Routing and Navigation Functions ---
+        
+        // Scrolls to the target section in the presentation view
+        function showSection(id) {
+            document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Switches to the Incident Viewer page and triggers the data fetch
+        document.getElementById('explore-btn').addEventListener('click', function() {
+            // Hide presentation, show viewer
+            document.getElementById('presentation-dashboard').classList.add('hidden-section');
+            document.getElementById('incident-viewer').classList.remove('hidden-section');
+            
+            // Scroll to top of the new page
+            window.scrollTo(0, 0);
+
+            // Fetch the data
+            fetchServiceNowData();
+        });
+
+        // Switches back to the presentation view
+        function showPresentation() {
+            document.getElementById('incident-viewer').classList.add('hidden-section');
+            document.getElementById('presentation-dashboard').classList.remove('hidden-section');
+            window.scrollTo(0, 0);
+        }
+
+        // --- Data Fetching and Display Functions ---
+
+        async function fetchServiceNowData() {
+            const container = document.getElementById('incident-data-container');
+            container.innerHTML = '<p class="loading">Fetching data...</p>';
+
+            // Security check
+            if (SECURE_TOKEN === 'YOUR_SECURE_BEARER_TOKEN_HERE') {
+                 container.innerHTML = `<p class="error">FATAL ERROR: Please replace "YOUR_SECURE_BEARER_TOKEN_HERE" with a real token in the JavaScript code.</p>`;
+                 return;
+            }
+
+            try {
+                const response = await fetch(URL, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Authorization': `Bearer ${SECURE_TOKEN}`
+                    }
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    let errorMsg = `HTTP Error: ${response.status} - ${errorData.error ? errorData.error.message : response.statusText}`;
+                    if (response.status === 401) {
+                        errorMsg += ". Possible: Token is invalid, expired, or missing roles.";
+                    }
+                    throw new Error(errorMsg);
+                }
+
+                const data = await response.json();
+                const incidents = data.result;
+
+                if (incidents && incidents.length > 0) {
+                    displayTable(incidents);
+                } else {
+                    container.innerHTML = '<p>No incidents found matching the specified query filters.</p>';
+                }
+
+            } catch (error) {
+                console.error("Fetch failed:", error);
+                container.innerHTML = `<p class="error">Failed to connect to ServiceNow: ${error.message}<br>
+                **Checklist:** 1. Is your Token valid? 2. Has your admin configured CORS?</p>`;
+            }
+        }
+
+        function displayTable(incidents) {
+            const container = document.getElementById('incident-data-container');
+            
+            let tableHTML = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Number</th>
+                            <th>State</th>
+                            <th>Opened At</th>
+                            <th>Closed At</th>
+                            <th>Resolved By</th>
+                            <th>Closed By</th>
+                            <th>Hold Reason</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            incidents.forEach(inc => {
+                tableHTML += `
+                    <tr>
+                        <td>${inc.number.display_value || 'N/A'}</td>
+                        <td>${inc.incident_state.display_value || 'N/A'}</td>
+                        <td>${inc.opened_at.display_value || 'N/A'}</td>
+                        <td>${inc.closed_at.display_value || 'N/A'}</td>
+                        <td>${inc.resolved_by.display_value || 'N/A'}</td>
+                        <td>${inc.closed_by.display_value || 'N/A'}</td>
+                        <td>${inc.hold_reason.display_value || 'N/A'}</td>
+                    </tr>
+                `;
+            });
+
+            tableHTML += '</tbody></table>';
+            container.innerHTML = tableHTML;
+        }
+
+    </script>
+</body>
+</html>
